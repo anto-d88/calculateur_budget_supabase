@@ -46,7 +46,8 @@ st.markdown("""
 if "theme" not in st.session_state:
     st.session_state["theme"] = "dark"
 
-theme = THEMES[st.session_state["theme"]]
+theme = THEMES.get(st.session_state.get("theme", "dark"), THEMES["dark"])
+
 
 # --------------------------------------------
 # 🔐 Connexion Supabase
