@@ -8,7 +8,7 @@
   "theme_color": "#4CAF50",
   "icons": [
     {
-      "src": "icon-512.png",
+      "src": "https://github.com/anto-d88/calculateur_budget_supabase/blob/574cdd94f4a8076a36c4e4b92e27dce9a819ef19/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
