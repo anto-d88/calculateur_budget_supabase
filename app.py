@@ -14,6 +14,16 @@ from themes import THEMES
 # ============================================================
 
 st.set_page_config(page_title="💸 Calculateur de Budget", page_icon="💰", layout="wide")
+# --- Ajout du manifeste pour PWA ---
+st.markdown(
+    """
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Charger les variables d'environnement (.env) ---
 load_dotenv()
