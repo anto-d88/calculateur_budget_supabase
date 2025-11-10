@@ -1,0 +1,16 @@
+{
+  "name": "Calculateur de Budget Antonio",
+  "short_name": "BudgetApp",
+  "description": "Ton assistant financier personnel en ligne 💸",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E1E2F",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/<ton_utilisateur_github>/calculateur_budget_supabase/main/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
