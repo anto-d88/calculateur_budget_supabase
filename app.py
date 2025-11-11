@@ -1,122 +1,120 @@
-# ======================================================
-# 💸 APP PRINCIPALE SPIRBOOST - Connexion / Authentification
-# ======================================================
+# ============================================================
+# 💸 CALCULATEUR DE BUDGET - VERSION AVEC NAVIGATION COMPLÈTE
+# ============================================================
 
 import streamlit as st
 from supabase import create_client
 from dotenv import load_dotenv
 import os
 
-# ======================================================
-# 🔧 CONFIGURATION GLOBALE STREAMLIT
-# ======================================================
-st.set_page_config(page_title="💸 SpirBoost Budget", page_icon="💰", layout="centered")
+# --------------------------------------------
+# 🔧 CONFIGURATION DE BASE
+# --------------------------------------------
+st.set_page_config(
+    page_title="💸 Calculateur de Budget",
+    page_icon="💰",
+    layout="centered",
+)
 
-# Design responsive + style global
+# --- Chargement du thème global (Dragon Ball par ex.)
 st.markdown("""
-<style>
-.block-container {padding-top:1rem;padding-bottom:2rem;}
-button[kind="primary"] {height:50px !important;font-size:18px !important;}
-</style>
+    <style>
+        /* Thème général */
+        body {
+            background-color: #0B0C10;
+            color: #FFFFFF;
+        }
+
+        h1, h2, h3, h4, h5 {
+            color: #F1C40F;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
+        }
+
+        /* Barre supérieure */
+        .top-banner {
+            background: linear-gradient(90deg, #111, #FFB300, #FF6F00);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(255, 183, 0, 0.6);
+        }
+
+        /* Liens rapides */
+        button[kind="secondary"] {
+            background-color: #222 !important;
+            border: 1px solid #FFB300 !important;
+            color: #FFD700 !important;
+            font-weight: 600;
+            border-radius: 10px !important;
+            transition: all 0.3s ease-in-out;
+        }
+
+        button[kind="secondary"]:hover {
+            background-color: #FFB300 !important;
+            color: #111 !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.7);
+        }
+
+        .block-container {
+            padding-top: 1rem !important;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-# ======================================================
-# 🔐 CONNEXION À SUPABASE
-# ======================================================
+# --------------------------------------------
+# 🔐 CONNEXION SUPABASE
+# --------------------------------------------
 load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# ======================================================
-# 🧠 GESTION DE SESSION
-# ======================================================
-if "user" not in st.session_state:
-    st.session_state["user"] = None
+# --------------------------------------------
+# 🚀 BANNIÈRE D’ACCUEIL
+# --------------------------------------------
+st.markdown('<div class="top-banner">⚡ Calculateur de Budget - SpirBoost Dragon Ball ⚡</div>', unsafe_allow_html=True)
 
-if "dashboard_loaded" not in st.session_state:
-    st.session_state["dashboard_loaded"] = False  # pour reset la barre Dragon Ball
+st.title("🏠 Accueil du Calculateur de Budget")
+st.markdown("Bienvenue dans ton espace **SpirBoost Budget** 💰 – choisis une section ci-dessous :")
 
-# ======================================================
-# 🧩 FONCTIONS D’AUTHENTIFICATION
-# ======================================================
-def login(email, password):
-    """Connexion utilisateur"""
-    try:
-        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        return result.user
-    except Exception as e:
-        st.error(f"Erreur de connexion : {e}")
-        return None
+# --------------------------------------------
+# 🔗 NAVIGATION RAPIDE (multi-pages)
+# --------------------------------------------
+st.markdown("## 🚀 Navigation rapide")
 
-def signup(email, password):
-    """Création d’un nouveau compte"""
-    try:
-        result = supabase.auth.sign_up({"email": email, "password": password})
-        if result.user:
-            st.success("✅ Compte créé ! Vérifie ton e-mail avant de te connecter.")
-    except Exception as e:
-        st.error(f"Erreur : {e}")
+col1, col2 = st.columns(2)
+col3, col4 = st.columns(2)
 
-def logout():
-    """Déconnexion complète"""
-    st.session_state["user"] = None
-    st.session_state["dashboard_loaded"] = False  # Rejoue la barre au prochain accès Dashboard
-    st.success("Déconnexion réussie ✅")
-    st.rerun()
+with col1:
+    st.page_link("pages/1_Transactions.py", label="💳 Gérer mes transactions", icon="💰")
 
-# ======================================================
-# 🔑 PAGE D’AUTHENTIFICATION
-# ======================================================
-if not st.session_state["user"]:
-    st.title("🔐 Connexion à ton espace SpirBoost")
+with col2:
+    st.page_link("pages/2_Statistiques.py", label="📊 Statistiques détaillées", icon="📈")
 
-    tab1, tab2 = st.tabs(["Se connecter", "Créer un compte"])
+with col3:
+    st.page_link("pages/3_Paramètres.py", label="⚙️ Paramètres & Thèmes", icon="🧩")
 
-    with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Mot de passe", type="password")
+with col4:
+    st.page_link("pages/4_Dashboard.py", label="🔥 Tableau de bord visuel", icon="📊")
 
-        if st.button("Se connecter"):
-            user = login(email, password)
-            if user:
-                st.session_state["user"] = user
-                st.success("Connexion réussie ✅")
-                st.rerun()
-
-    with tab2:
-        new_email = st.text_input("Nouvel email")
-        new_password = st.text_input("Nouveau mot de passe", type="password")
-        if st.button("Créer le compte"):
-            if new_email and new_password:
-                signup(new_email, new_password)
-            else:
-                st.warning("⚠️ Remplis tous les champs avant de créer ton compte.")
-    st.stop()
-
-# ======================================================
-# 🏠 ACCUEIL APRÈS CONNEXION
-# ======================================================
-st.title("🏠 Accueil SpirBoost Budget")
-st.markdown(f"Bienvenue **{st.session_state['user'].email}** 👋")
-
-if st.button("🚪 Se déconnecter"):
-    logout()
-
-st.markdown("---")
-st.subheader("📲 Accès rapide")
-
-# 💡 Menu automatique : Streamlit détecte les pages du dossier /pages
-st.info("👉 Utilise le menu latéral (à gauche ou via le bouton ☰ sur mobile) pour accéder à :\n\n"
-        "💳 1_Transactions\n"
-        "📊 2_Statistiques\n"
-        "⚙️ 3_Paramètres\n"
-        "⚡ 4_Dashboard (barre Dragon Ball Z)")
-
-st.markdown("---")
+# --------------------------------------------
+# 🧠 MESSAGE D’ACCUEIL
+# --------------------------------------------
 st.markdown("""
-<div style='text-align:center;'>
-    <h4 style='color:#00f6ff;'>SpirBoost ⚡ Intelligence & Budget</h4>
-    <p style='color:gray;'>Version 2025 — Créée avec passion par Antonio</p>
-</div>
-""", unsafe_allow_html=True)
+---
+### 💡 Astuce :
+Tu peux installer cette app sur ton **mobile Android** comme une vraie application (PWA) 📱  
+➡️ Clique sur *“Ajouter à l’écran d’accueil”* quand tu ouvres ton app hébergée.
+---
+""")
+
+# --------------------------------------------
+# ✅ FIN
+# --------------------------------------------
+st.markdown("💫 *Propulsé par SpirBoost AI – version Dragon Ball Ultimate ⚡*")
