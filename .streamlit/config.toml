@@ -1,0 +1,22 @@
+# =====================================================
+# ⚙️ Configuration Streamlit - Projet Budget Antonio
+# =====================================================
+
+[server]
+# Autorise le rechargement instantané à chaque sauvegarde
+runOnSave = true
+
+# (facultatif) pour Streamlit Cloud : autoriser plusieurs sessions utilisateurs
+enableXsrfProtection = true
+
+[browser]
+# Désactive les statistiques anonymes
+gatherUsageStats = false
+
+[theme]
+base="dark"
+primaryColor="#00f6ff"
+backgroundColor="#0e1117"
+secondaryBackgroundColor="#1a1a1a"
+textColor="#ffffff"
+font="sans serif"
