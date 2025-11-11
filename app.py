@@ -1,89 +1,74 @@
 # ============================================================
-# 💸 CALCULATEUR DE BUDGET - VERSION COMPLÈTE
+# 💸 CALCULATEUR DE BUDGET — version corrigée
 # ============================================================
-import streamlit as st
-from supabase import create_client
-from dotenv import load_dotenv
 import os
+from datetime import datetime, timezone
+
 import pandas as pd
-from datetime import datetime
-from themes import THEMES  # ton fichier themes.py
+import streamlit as st
+from dotenv import load_dotenv
+from supabase import create_client
+from themes import THEMES
 
-# --------------------------------------------
-# 🔧 CONFIGURATION DE BASE
-# --------------------------------------------
+# ------------------------------
+# ⚙️ CONFIG DE PAGE + MOBILE
+# ------------------------------
 st.set_page_config(page_title="💸 Calculateur de Budget", page_icon="💰", layout="centered")
-
-# --- Mode mobile-friendly (PWA & responsive) ---
 st.markdown("""
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <style>
-        input, textarea, select {
-            width: 100% !important;
-            max-width: 100% !important;
-            font-size: 18px !important;
-        }
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 2rem !important;
-            padding-left: 0.8rem !important;
-            padding-right: 0.8rem !important;
-        }
-        div[data-testid="stForm"] {
-            overflow-y: auto !important;
-            max-height: 85vh !important;
-        }
-        button[kind="primary"] {
-            height: 55px !important;
-            font-size: 18px !important;
-        }
-    </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<style>
+  input, textarea, select { width:100% !important; max-width:100% !important; font-size:18px !important;}
+  .block-container { padding-top:1rem !important; padding-bottom:2rem !important; padding-left:.8rem !important; padding-right:.8rem !important;}
+  div[data-testid="stForm"] { overflow-y:auto !important; max-height:85vh !important;}
+  button[kind="primary"] { height:55px !important; font-size:18px !important;}
+</style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------
-# 🌈 Thème
-# --------------------------------------------
+# ------------------------------
+# 🎨 THÈME
+# ------------------------------
 if "theme" not in st.session_state:
     st.session_state["theme"] = "dark"
-
 theme = THEMES.get(st.session_state.get("theme", "dark"), THEMES["dark"])
 
-
-# --------------------------------------------
-# 🔐 Connexion Supabase
-# --------------------------------------------
+# ------------------------------
+# 🔐 SUPABASE
+# ------------------------------
 load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# --------------------------------------------
-# 🧭 Navigation (barre simple)
-# --------------------------------------------
-st.markdown(f"""
-    <div style="background-color:{theme['nav_bg']}; padding: 10px; border-radius: 10px; text-align:center;">
-        <a href="#" style="color:{theme['text']}; font-size:22px; text-decoration:none;">🏠 Calculateur Budget Antonio</a>
+# ------------------------------
+# 🧭 NAV SIMPLE
+# ------------------------------
+st.markdown(
+    f"""
+    <div style="background-color:{theme['nav_bg']}; padding:10px; border-radius:10px; text-align:center;">
+        <span style="color:{theme['text']}; font-size:22px;">🏠 Calculateur Budget Antonio</span>
     </div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# --------------------------------------------
-# 👤 Gestion de la session utilisateur
-# --------------------------------------------
+# ------------------------------
+# 👤 SESSION UTILISATEUR
+# ------------------------------
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-def login(email, password):
+def login(email: str, password: str):
     try:
-        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        return result.user
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return res.user
     except Exception as e:
         st.error(f"Erreur de connexion : {e}")
         return None
 
-def signup(email, password):
+def signup(email: str, password: str):
     try:
-        result = supabase.auth.sign_up({"email": email, "password": password})
-        if result.user:
+        res = supabase.auth.sign_up({"email": email, "password": password})
+        if res.user:
             st.success("✅ Compte créé ! Confirme ton e-mail avant de te connecter.")
     except Exception as e:
         st.error(f"Erreur : {e}")
@@ -92,18 +77,16 @@ def logout():
     st.session_state["user"] = None
     st.rerun()
 
-# --------------------------------------------
-# 🔑 Authentification
-# --------------------------------------------
+# ------------------------------
+# 🔑 AUTH
+# ------------------------------
 if not st.session_state["user"]:
     st.title("🔐 Connexion à ton espace budget")
-
     tab1, tab2 = st.tabs(["Se connecter", "Créer un compte"])
 
     with tab1:
         email = st.text_input("Email")
         password = st.text_input("Mot de passe", type="password")
-
         if st.button("Se connecter"):
             user = login(email, password)
             if user:
@@ -121,58 +104,64 @@ if not st.session_state["user"]:
                 st.warning("Remplis tous les champs.")
     st.stop()
 
-# --------------------------------------------
-# 💸 Tableau de bord principal
-# --------------------------------------------
+# ------------------------------
+# 🏠 DASHBOARD
+# ------------------------------
+user = st.session_state["user"]
+user_id = getattr(user, "id", None)
+user_email = getattr(user, "email", None)
+
 st.title("💼 Tableau de bord financier")
-st.markdown(f"Bienvenue **{st.session_state['user'].email}** 👋")
+st.markdown(f"Bienvenue **{user_email}** 👋")
 
 if st.button("Se déconnecter"):
     logout()
 
-# --- Ajouter une transaction ---
+# -------- Ajouter une transaction --------
 st.subheader("➕ Ajouter une transaction")
 type_transac = st.radio("Type :", ["revenu", "dépense", "crédit", "voiture"], horizontal=True)
 montant = st.number_input("Montant (€)", min_value=0.0, step=0.5)
 description = st.text_input("Description")
 categorie = st.selectbox("Catégorie", ["Autre", "Revenu", "Crédit", "Voiture", "Alimentation", "Loisirs"])
 
-if st.button("Enregistrer la transaction"):
+if st.button("💾 Enregistrer la transaction"):
     if montant > 0 and description:
-        user = st.session_state.get("user")
-        user_email = getattr(user, "email", None)
-
-        if not user_email:
+        if not user_id or not user_email:
             st.error("❌ Utilisateur non authentifié. Reconnecte-toi avant d’enregistrer.")
         else:
-            response = supabase.table("transactions").insert({
-                "type": type_transac,
-                "montant": montant,
-                "description": description,
-                "user_email": user_email,
-                "categorie": categorie,  # si tu l’as ajouté
-                "date": datetime.now().isoformat(),
-            }).execute()
-            st.success("✅ Transaction enregistrée avec succès !")
-            st.rerun()
+            try:
+                supabase.table("transactions").insert({
+                    "user_id": user_id,              # ✅ on enregistre l'ID
+                    "user_email": user_email,        # ✅ et l'email
+                    "type": type_transac,
+                    "montant": montant,
+                    "description": description,
+                    "categorie": categorie,
+                    "date": datetime.now(timezone.utc).isoformat()
+                }).execute()
+                st.success("✅ Transaction enregistrée avec succès !")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erreur d'enregistrement : {e}")
     else:
         st.warning("⚠️ Remplis tous les champs avant d’enregistrer.")
 
-# --------------------------------------------
-# 📋 Historique des transactions
-# --------------------------------------------
+# -------- Récupération des transactions --------
 st.subheader("📋 Historique des transactions")
 
+df = pd.DataFrame()
 try:
-    data = (
-        supabase.table("transactions")
-        .select("*")
-        .eq("user_id", st.session_state["user"].id)
-        .order("date", desc=True)
-        .execute()
-    )
+    # ✅ filtre principal par user_id (RLS standard)
+    q = supabase.table("transactions").select("*").order("date", desc=True)
+    if user_id:
+        q = q.eq("user_id", user_id)
+    elif user_email:
+        # fallback si la table n'a pas encore user_id partout
+        q = q.eq("user_email", user_email)
+    data = q.execute()
 
     if data.data:
+        df = pd.DataFrame(data.data)
         for t in data.data:
             signe = "+" if t["type"] == "revenu" else "-"
             couleur = "green" if t["type"] == "revenu" else "red"
@@ -186,19 +175,32 @@ try:
 except Exception as e:
     st.error(f"Erreur lors du chargement : {e}")
 
-# --------------------------------------------
-# 💰 Solde et résumé
-# --------------------------------------------
-st.subheader("💰 Solde actuel")
+# -------- Cartes Résumé --------
+st.subheader("📊 Résumé")
 
-if "data" in locals() and data.data:
-    total_revenu = sum(t["montant"] for t in data.data if t["type"] == "revenu")
-    total_depense = sum(t["montant"] for t in data.data if t["type"] in ["dépense", "crédit", "voiture"])
-    solde = total_revenu - total_depense
+if not df.empty:
+    total_revenu = df.loc[df["type"] == "revenu", "montant"].sum()
+    total_depense = df.loc[df["type"].isin(["dépense", "crédit", "voiture"]), "montant"].sum()
+    solde = float(total_revenu) - float(total_depense)
 
-    if solde >= 0:
-        st.success(f"Ton solde actuel est de **{solde:.2f} €**")
-    else:
-        st.error(f"Tu es dans le négatif : **{solde:.2f} €** 😬")
+    st.markdown(
+        f"""
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
+                <h4 style="margin:0 0 8px 0;">💰 Solde</h4>
+                <h2 style="color:{'limegreen' if solde >= 0 else 'tomato'};margin:0;">{solde:.2f} €</h2>
+            </div>
+            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
+                <h4 style="margin:0 0 8px 0;">📈 Revenus</h4>
+                <h2 style="color:limegreen;margin:0;">+{total_revenu:.2f} €</h2>
+            </div>
+            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
+                <h4 style="margin:0 0 8px 0;">📉 Dépenses</h4>
+                <h2 style="color:tomato;margin:0;">-{total_depense:.2f} €</h2>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 else:
-    st.info("Aucune donnée à afficher.")
+    st.info("Aucune donnée à afficher pour le résumé.")
