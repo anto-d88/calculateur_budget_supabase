@@ -20,3 +20,7 @@ backgroundColor="#0e1117"
 secondaryBackgroundColor="#1a1a1a"
 textColor="#ffffff"
 font="sans serif"
+
+[client]
+showSidebarNavigation = true
+
