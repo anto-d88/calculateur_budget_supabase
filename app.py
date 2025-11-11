@@ -137,21 +137,24 @@ montant = st.number_input("Montant (€)", min_value=0.0, step=0.5)
 description = st.text_input("Description")
 categorie = st.selectbox("Catégorie", ["Autre", "Revenu", "Crédit", "Voiture", "Alimentation", "Loisirs"])
 
-if st.button("💾 Enregistrer la transaction"):
+if st.button("Enregistrer la transaction"):
     if montant > 0 and description:
-        try:
-            supabase.table("transactions").insert({
+        user = st.session_state.get("user")
+        user_email = getattr(user, "email", None)
+
+        if not user_email:
+            st.error("❌ Utilisateur non authentifié. Reconnecte-toi avant d’enregistrer.")
+        else:
+            response = supabase.table("transactions").insert({
                 "type": type_transac,
                 "montant": montant,
                 "description": description,
-                "categorie": categorie,
-                "user_id": st.session_state["user"].id,
-                "date": datetime.now().isoformat()
+                "user_email": user_email,
+                "categorie": categorie,  # si tu l’as ajouté
+                "date": datetime.now().isoformat(),
             }).execute()
             st.success("✅ Transaction enregistrée avec succès !")
             st.rerun()
-        except Exception as e:
-            st.error(f"Erreur d'enregistrement : {e}")
     else:
         st.warning("⚠️ Remplis tous les champs avant d’enregistrer.")
 
