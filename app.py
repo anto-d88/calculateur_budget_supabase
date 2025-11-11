@@ -136,9 +136,105 @@ if not st.session_state["user"]:
             else:
                 st.warning("Remplis tous les champs.")
     st.stop()
+def show_loading_screen():
+    st.markdown("""
+        <style>
+            .loading-container {
+                background-color: black;
+                background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+                height: 100vh;
+                width: 100vw;
+                position: fixed;
+                top: 0; left: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                color: #fff;
+                font-family: 'Orbitron', sans-serif;
+                overflow: hidden;
+            }
+
+            .energy-bar {
+                width: 80%;
+                height: 14px;
+                border-radius: 10px;
+                background: linear-gradient(90deg, #333 0%, #555 100%);
+                overflow: hidden;
+                margin-top: 30px;
+                box-shadow: 0 0 15px #00f6ff88;
+            }
+
+            .energy-fill {
+                height: 100%;
+                width: 0%;
+                background: linear-gradient(90deg, #00f6ff, #1aff00, #ffcc00);
+                box-shadow: 0 0 15px #00f6ff;
+                border-radius: 10px;
+                animation: fillEnergy 3.5s ease-in-out forwards;
+            }
+
+            @keyframes fillEnergy {
+                0% { width: 0%; filter: brightness(0.8); }
+                25% { width: 40%; filter: brightness(1.2); }
+                50% { width: 60%; filter: brightness(1.5); }
+                75% { width: 85%; filter: brightness(1.8); }
+                100% { width: 100%; filter: brightness(2); }
+            }
+
+            .particle {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: rgba(0,255,255,0.6);
+                animation: fly 3s linear infinite;
+            }
+
+            @keyframes fly {
+                from { transform: translateY(100vh) scale(0.3); opacity: 0; }
+                to { transform: translateY(-10vh) scale(1); opacity: 1; }
+            }
+
+            .loading-text {
+                font-size: 1.5rem;
+                margin-top: 10px;
+                color: #00f6ff;
+                text-shadow: 0 0 8px #00f6ff;
+                animation: pulse 1s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        </style>
+
+        <div class="loading-container">
+            <div class="loading-text">⚡ CHARGEMENT DU KI FINANCIER...</div>
+            <div class="energy-bar">
+                <div class="energy-fill"></div>
+            </div>
+            <div class="particle" style="left:10%; animation-delay:0s;"></div>
+            <div class="particle" style="left:30%; animation-delay:0.5s;"></div>
+            <div class="particle" style="left:50%; animation-delay:1s;"></div>
+            <div class="particle" style="left:70%; animation-delay:1.5s;"></div>
+            <div class="particle" style="left:90%; animation-delay:2s;"></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Temps de chargement simulé (3 secondes)
+    time.sleep(3)
+    st.markdown(
+        "<style>.loading-container{display:none !important;}</style>",
+        unsafe_allow_html=True
+    )
 
 # ------------------------------
 # 🏠 DASHBOARD
+show_loading_screen()
+
 # ------------------------------
 user = st.session_state["user"]
 user_id = getattr(user, "id", None)
