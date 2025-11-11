@@ -1,35 +1,79 @@
 # ============================================================
-# 💸 CALCULATEUR DE BUDGET — version corrigée
+# 💸 CALCULATEUR DE BUDGET — DASHBOARD DESIGN + GRAPHIQUES
 # ============================================================
 import os
 from datetime import datetime, timezone
-
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from supabase import create_client
+import matplotlib.pyplot as plt
 from themes import THEMES
 
 # ------------------------------
 # ⚙️ CONFIG DE PAGE + MOBILE
 # ------------------------------
-st.set_page_config(page_title="💸 Calculateur de Budget", page_icon="💰", layout="centered")
+st.set_page_config(page_title="💸 Calculateur de Budget", page_icon="💰", layout="wide")
+
 st.markdown("""
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
-  input, textarea, select { width:100% !important; max-width:100% !important; font-size:18px !important;}
-  .block-container { padding-top:1rem !important; padding-bottom:2rem !important; padding-left:.8rem !important; padding-right:.8rem !important;}
-  div[data-testid="stForm"] { overflow-y:auto !important; max-height:85vh !important;}
-  button[kind="primary"] { height:55px !important; font-size:18px !important;}
+    body {
+        background-color: #0E1117;
+        color: #FAFAFA;
+    }
+    header {visibility: hidden;} /* Supprime le header Streamlit par défaut */
+
+    .main-title {
+        font-size: 2.3rem;
+        font-weight: bold;
+        margin-top: 60px;
+        margin-bottom: 30px;
+        text-align: center;
+        color: #4CAF50;
+    }
+
+    /* Barre supérieure sombre */
+    .top-bar {
+        background-color: #1C1C1E;
+        color: #F5F5F5;
+        padding: 14px;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 100;
+        text-align: center;
+        border-bottom: 1px solid #333;
+    }
+
+    .card {
+        background-color: #1E1E2F;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        min-width: 300px;
+        text-align: center;
+    }
+
+    .card h2 {
+        margin: 0;
+        color: #4CAF50;
+    }
+
+    .metric-value {
+        font-size: 2.3rem;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+
+    .metric-label {
+        color: #B0B0B0;
+        font-size: 1rem;
+        margin-top: 5px;
+    }
+
 </style>
 """, unsafe_allow_html=True)
-
-# ------------------------------
-# 🎨 THÈME
-# ------------------------------
-if "theme" not in st.session_state:
-    st.session_state["theme"] = "dark"
-theme = THEMES.get(st.session_state.get("theme", "dark"), THEMES["dark"])
 
 # ------------------------------
 # 🔐 SUPABASE
@@ -40,24 +84,12 @@ key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 # ------------------------------
-# 🧭 NAV SIMPLE
-# ------------------------------
-st.markdown(
-    f"""
-    <div style="background-color:{theme['nav_bg']}; padding:10px; border-radius:10px; text-align:center;">
-        <span style="color:{theme['text']}; font-size:22px;">🏠 Calculateur Budget Antonio</span>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# ------------------------------
 # 👤 SESSION UTILISATEUR
 # ------------------------------
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-def login(email: str, password: str):
+def login(email, password):
     try:
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         return res.user
@@ -65,7 +97,7 @@ def login(email: str, password: str):
         st.error(f"Erreur de connexion : {e}")
         return None
 
-def signup(email: str, password: str):
+def signup(email, password):
     try:
         res = supabase.auth.sign_up({"email": email, "password": password})
         if res.user:
@@ -81,7 +113,8 @@ def logout():
 # 🔑 AUTH
 # ------------------------------
 if not st.session_state["user"]:
-    st.title("🔐 Connexion à ton espace budget")
+    st.markdown('<div class="top-bar">💰 Calculateur Budget Antonio</div>', unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>🔐 Connexion à ton espace budget</h1>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Se connecter", "Créer un compte"])
 
     with tab1:
@@ -111,96 +144,91 @@ user = st.session_state["user"]
 user_id = getattr(user, "id", None)
 user_email = getattr(user, "email", None)
 
-st.title("💼 Tableau de bord financier")
-st.markdown(f"Bienvenue **{user_email}** 👋")
+st.markdown('<div class="top-bar">💰 Calculateur Budget Antonio</div>', unsafe_allow_html=True)
+st.markdown(f"<h1 class='main-title'>Bienvenue {user_email} 👋</h1>", unsafe_allow_html=True)
 
 if st.button("Se déconnecter"):
     logout()
 
-# -------- Ajouter une transaction --------
-st.subheader("➕ Ajouter une transaction")
-type_transac = st.radio("Type :", ["revenu", "dépense", "crédit", "voiture"], horizontal=True)
-montant = st.number_input("Montant (€)", min_value=0.0, step=0.5)
-description = st.text_input("Description")
-categorie = st.selectbox("Catégorie", ["Autre", "Revenu", "Crédit", "Voiture", "Alimentation", "Loisirs"])
-
-if st.button("💾 Enregistrer la transaction"):
-    if montant > 0 and description:
-        if not user_id or not user_email:
-            st.error("❌ Utilisateur non authentifié. Reconnecte-toi avant d’enregistrer.")
-        else:
-            try:
-                supabase.table("transactions").insert({
-                    "user_id": user_id,              # ✅ on enregistre l'ID
-                    "user_email": user_email,        # ✅ et l'email
-                    "type": type_transac,
-                    "montant": montant,
-                    "description": description,
-                    "categorie": categorie,
-                    "date": datetime.now(timezone.utc).isoformat()
-                }).execute()
-                st.success("✅ Transaction enregistrée avec succès !")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erreur d'enregistrement : {e}")
-    else:
-        st.warning("⚠️ Remplis tous les champs avant d’enregistrer.")
-
 # -------- Récupération des transactions --------
-st.subheader("📋 Historique des transactions")
-
 df = pd.DataFrame()
 try:
-    # ✅ filtre principal par user_id (RLS standard)
     q = supabase.table("transactions").select("*").order("date", desc=True)
     if user_id:
         q = q.eq("user_id", user_id)
     elif user_email:
-        # fallback si la table n'a pas encore user_id partout
         q = q.eq("user_email", user_email)
     data = q.execute()
-
     if data.data:
         df = pd.DataFrame(data.data)
-        for t in data.data:
-            signe = "+" if t["type"] == "revenu" else "-"
-            couleur = "green" if t["type"] == "revenu" else "red"
-            st.markdown(
-                f"<b style='color:{couleur};'>{signe}{t['montant']}€</b> — {t['description']} "
-                f"({t.get('categorie','Autre')}) — <i>{t['date'][:10]}</i>",
-                unsafe_allow_html=True,
-            )
-    else:
-        st.info("Aucune transaction pour le moment.")
 except Exception as e:
     st.error(f"Erreur lors du chargement : {e}")
 
-# -------- Cartes Résumé --------
-st.subheader("📊 Résumé")
+# -------- Calcul des totaux --------
+total_revenu = df.loc[df["type"] == "revenu", "montant"].sum() if not df.empty else 0
+total_depense = df.loc[df["type"].isin(["dépense", "crédit", "voiture"]), "montant"].sum() if not df.empty else 0
+solde = float(total_revenu) - float(total_depense)
 
-if not df.empty:
-    total_revenu = df.loc[df["type"] == "revenu", "montant"].sum()
-    total_depense = df.loc[df["type"].isin(["dépense", "crédit", "voiture"]), "montant"].sum()
-    solde = float(total_revenu) - float(total_depense)
+# ------------------------------
+# 📊 CARTES + GRAPHIQUES
+# ------------------------------
+col1, col2, col3 = st.columns(3, gap="large")
 
+# 💰 SOLDE
+with col1:
     st.markdown(
         f"""
-        <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
-                <h4 style="margin:0 0 8px 0;">💰 Solde</h4>
-                <h2 style="color:{'limegreen' if solde >= 0 else 'tomato'};margin:0;">{solde:.2f} €</h2>
-            </div>
-            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
-                <h4 style="margin:0 0 8px 0;">📈 Revenus</h4>
-                <h2 style="color:limegreen;margin:0;">+{total_revenu:.2f} €</h2>
-            </div>
-            <div style="background:{theme['nav_bg']};padding:18px 22px;border-radius:14px;min-width:220px;box-shadow:0 4px 10px rgba(0,0,0,.2);">
-                <h4 style="margin:0 0 8px 0;">📉 Dépenses</h4>
-                <h2 style="color:tomato;margin:0;">-{total_depense:.2f} €</h2>
-            </div>
+        <div class="card">
+            <h2>💰 Solde</h2>
+            <div class="metric-value" style="color:{'limegreen' if solde >= 0 else 'tomato'};">{solde:.2f} €</div>
+            <div class="metric-label">Solde total actuel</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-else:
-    st.info("Aucune donnée à afficher pour le résumé.")
+    if not df.empty:
+        fig, ax = plt.subplots(figsize=(3, 1.5))
+        df["date"] = pd.to_datetime(df["date"])
+        ax.plot(df["date"], df["montant"].cumsum(), color="limegreen")
+        ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#1E1E2F")
+        st.pyplot(fig)
+
+# 📈 REVENUS
+with col2:
+    st.markdown(
+        f"""
+        <div class="card">
+            <h2>📈 Revenus</h2>
+            <div class="metric-value" style="color:limegreen;">+{total_revenu:.2f} €</div>
+            <div class="metric-label">Somme totale des revenus</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if not df.empty:
+        fig, ax = plt.subplots(figsize=(3, 1.5))
+        revenus = df[df["type"] == "revenu"]
+        if not revenus.empty:
+            ax.bar(revenus["date"].dt.strftime("%m-%d"), revenus["montant"], color="#4CAF50")
+        ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#1E1E2F")
+        st.pyplot(fig)
+
+# 📉 DÉPENSES
+with col3:
+    st.markdown(
+        f"""
+        <div class="card">
+            <h2>📉 Dépenses</h2>
+            <div class="metric-value" style="color:tomato;">-{total_depense:.2f} €</div>
+            <div class="metric-label">Total des dépenses</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if not df.empty:
+        fig, ax = plt.subplots(figsize=(3, 1.5))
+        dep = df[df["type"].isin(["dépense", "crédit", "voiture"])]
+        if not dep.empty:
+            ax.bar(dep["date"].dt.strftime("%m-%d"), dep["montant"], color="tomato")
+        ax.set_xticks([]); ax.set_yticks([]); ax.set_facecolor("#1E1E2F")
+        st.pyplot(fig)
