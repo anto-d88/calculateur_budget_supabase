@@ -158,6 +158,8 @@ if st.button("🚪 Se déconnecter"):
 
 st.markdown("---")
 st.write("📊 Accède à tes outils :")
-st.page_link("transactions", label="💳 Gérer mes transactions", icon="💸")
-st.page_link("dashboard", label="📊 Tableau de bord", icon="📈")
+st.page_link("pages/1_Transactions.py", label="💳 Gérer mes transactions", icon="💸")
+st.page_link("pages/2_Statistiques.py", label="📊 Tableau de bord", icon="📈")
+st.page_link("pages/3_Paramètres.py", label="⚙️ Paramètres", icon="🛠️")
+st.page_link("4_Dashboard", label="📊 Tableau de bord", icon="📈")
 
