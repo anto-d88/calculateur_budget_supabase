@@ -1,105 +1,47 @@
-# ============================================================
-# 💸 BUDGET ANTONIO Z - PAGE PRINCIPALE (Connexion + Dashboard)
-# ============================================================
+# ======================================================
+# 💸 APP PRINCIPALE SPIRBOOST - Connexion / Authentification
+# ======================================================
 
 import streamlit as st
 from supabase import create_client
 from dotenv import load_dotenv
 import os
-import time
-from datetime import datetime
 
-# --------------------------------------------
-# ⚙️ CONFIGURATION
-# --------------------------------------------
-st.set_page_config(page_title="💸 Budget Antonio Z", page_icon="💰", layout="centered")
+# ======================================================
+# 🔧 CONFIGURATION GLOBALE STREAMLIT
+# ======================================================
+st.set_page_config(page_title="💸 SpirBoost Budget", page_icon="💰", layout="centered")
 
+# Design responsive + style global
+st.markdown("""
+<style>
+.block-container {padding-top:1rem;padding-bottom:2rem;}
+button[kind="primary"] {height:50px !important;font-size:18px !important;}
+</style>
+""", unsafe_allow_html=True)
+
+# ======================================================
+# 🔐 CONNEXION À SUPABASE
+# ======================================================
 load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# --------------------------------------------
-# ⚡ ANIMATION DRAGON BALL STYLE
-# --------------------------------------------
-def show_loading_screen():
-    placeholder = st.empty()
-    with placeholder.container():
-        st.markdown("""
-            <style>
-                .loading-container {
-                    background-color: black;
-                    background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-                    height: 100vh;
-                    width: 100vw;
-                    position: fixed;
-                    top: 0; left: 0;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 9999;
-                    color: #fff;
-                    font-family: 'Orbitron', sans-serif;
-                    overflow: hidden;
-                }
-                .energy-bar {
-                    width: 80%;
-                    height: 14px;
-                    border-radius: 10px;
-                    background: linear-gradient(90deg, #333 0%, #555 100%);
-                    overflow: hidden;
-                    margin-top: 30px;
-                    box-shadow: 0 0 15px #00f6ff88;
-                }
-                .energy-fill {
-                    height: 100%;
-                    width: 0%;
-                    background: linear-gradient(90deg, #00f6ff, #1aff00, #ffcc00);
-                    box-shadow: 0 0 15px #00f6ff;
-                    border-radius: 10px;
-                    animation: fillEnergy 3.5s ease-in-out forwards;
-                }
-                @keyframes fillEnergy {
-                    0% { width: 0%; filter: brightness(0.8); }
-                    25% { width: 40%; filter: brightness(1.2); }
-                    50% { width: 60%; filter: brightness(1.5); }
-                    75% { width: 85%; filter: brightness(1.8); }
-                    100% { width: 100%; filter: brightness(2); }
-                }
-                .loading-text {
-                    font-size: 1.5rem;
-                    margin-top: 10px;
-                    color: #00f6ff;
-                    text-shadow: 0 0 8px #00f6ff;
-                    animation: pulse 1s ease-in-out infinite;
-                }
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-            </style>
-            <div class="loading-container">
-                <div class="loading-text">⚡ CHARGEMENT DU KI FINANCIER...</div>
-                <div class="energy-bar"><div class="energy-fill"></div></div>
-            </div>
-        """, unsafe_allow_html=True)
-    time.sleep(3.5)
-    placeholder.empty()
-
-
-# --------------------------------------------
-# 🧠 CHARGEMENT INITIAL
-# --------------------------------------------
+# ======================================================
+# 🧠 GESTION DE SESSION
+# ======================================================
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-show_loading_screen()
+if "dashboard_loaded" not in st.session_state:
+    st.session_state["dashboard_loaded"] = False  # pour reset la barre Dragon Ball
 
-# --------------------------------------------
-# 🔐 AUTHENTIFICATION
-# --------------------------------------------
+# ======================================================
+# 🧩 FONCTIONS D’AUTHENTIFICATION
+# ======================================================
 def login(email, password):
+    """Connexion utilisateur"""
     try:
         result = supabase.auth.sign_in_with_password({"email": email, "password": password})
         return result.user
@@ -108,29 +50,34 @@ def login(email, password):
         return None
 
 def signup(email, password):
+    """Création d’un nouveau compte"""
     try:
         result = supabase.auth.sign_up({"email": email, "password": password})
         if result.user:
-            st.success("✅ Compte créé ! Confirme ton e-mail avant de te connecter.")
+            st.success("✅ Compte créé ! Vérifie ton e-mail avant de te connecter.")
     except Exception as e:
         st.error(f"Erreur : {e}")
 
 def logout():
+    """Déconnexion complète"""
     st.session_state["user"] = None
+    st.session_state["dashboard_loaded"] = False  # Rejoue la barre au prochain accès Dashboard
+    st.success("Déconnexion réussie ✅")
     st.rerun()
 
-# --------------------------------------------
-# 🔑 PAGE DE CONNEXION
-# --------------------------------------------
+# ======================================================
+# 🔑 PAGE D’AUTHENTIFICATION
+# ======================================================
 if not st.session_state["user"]:
-    st.title("🔐 Connexion à ton espace financier")
+    st.title("🔐 Connexion à ton espace SpirBoost")
 
     tab1, tab2 = st.tabs(["Se connecter", "Créer un compte"])
 
     with tab1:
         email = st.text_input("Email")
         password = st.text_input("Mot de passe", type="password")
-        if st.button("Connexion"):
+
+        if st.button("Se connecter"):
             user = login(email, password)
             if user:
                 st.session_state["user"] = user
@@ -144,22 +91,32 @@ if not st.session_state["user"]:
             if new_email and new_password:
                 signup(new_email, new_password)
             else:
-                st.warning("Remplis tous les champs.")
+                st.warning("⚠️ Remplis tous les champs avant de créer ton compte.")
     st.stop()
 
-# --------------------------------------------
-# 💼 TABLEAU DE BORD
-# --------------------------------------------
-user = st.session_state["user"]
-st.title(f"💼 Tableau de bord - {user.email}")
+# ======================================================
+# 🏠 ACCUEIL APRÈS CONNEXION
+# ======================================================
+st.title("🏠 Accueil SpirBoost Budget")
+st.markdown(f"Bienvenue **{st.session_state['user'].email}** 👋")
 
 if st.button("🚪 Se déconnecter"):
     logout()
 
 st.markdown("---")
-st.write("📊 Accède à tes outils :")
-st.page_link("pages/1_Transactions.py", label="💳 Gérer mes transactions", icon="💸")
-st.page_link("pages/2_Statistiques.py", label="📊 Tableau de bord", icon="📈")
-st.page_link("pages/3_Paramètres.py", label="⚙️ Paramètres", icon="🛠️")
-st.page_link("pages/4_Dashboard.py", label="📊 Tableau de bord", icon="📈")
+st.subheader("📲 Accès rapide")
 
+# 💡 Menu automatique : Streamlit détecte les pages du dossier /pages
+st.info("👉 Utilise le menu latéral (à gauche ou via le bouton ☰ sur mobile) pour accéder à :\n\n"
+        "💳 1_Transactions\n"
+        "📊 2_Statistiques\n"
+        "⚙️ 3_Paramètres\n"
+        "⚡ 4_Dashboard (barre Dragon Ball Z)")
+
+st.markdown("---")
+st.markdown("""
+<div style='text-align:center;'>
+    <h4 style='color:#00f6ff;'>SpirBoost ⚡ Intelligence & Budget</h4>
+    <p style='color:gray;'>Version 2025 — Créée avec passion par Antonio</p>
+</div>
+""", unsafe_allow_html=True)
