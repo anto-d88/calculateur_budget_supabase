@@ -17,11 +17,12 @@ supabase = create_client(url, key)
 # ======================================================
 if "user" not in st.session_state or st.session_state["user"] is None:
     st.warning("⚠️ Tu dois être connecté pour gérer tes transactions.")
+    st.page_link("app.py", label="🔐 Retour à la connexion", icon="➡️")
     st.stop()
 
 user = st.session_state.get("user")
-user_id = getattr(user, "id", None) if user else None
-user_email = getattr(user, "email", None) if user else None
+user_id = getattr(user, "id", None)
+user_email = getattr(user, "email", None)
 
 # ======================================================
 # 🧾 PAGE PRINCIPALE
@@ -78,9 +79,7 @@ try:
         st.info("Aucune transaction enregistrée.")
     else:
         for t in data.data:
-            with st.expander(
-                f"📅 {t['date'][:10]} | {t['description']} | {t['montant']} € | {t['categorie']}"
-            ):
+            with st.expander(f"📅 {t['date'][:10]} | {t['description']} | {t['montant']} € | {t['categorie']}"):
                 new_type = st.radio(
                     "Type :", 
                     ["revenu", "dépense"], 
@@ -105,9 +104,7 @@ try:
                 new_categorie = st.selectbox(
                     "Catégorie", 
                     ["Autre", "Crédit", "Voiture", "Revenu"],
-                    index=["Autre", "Crédit", "Voiture", "Revenu"].index(t["categorie"])
-                    if t["categorie"] in ["Autre", "Crédit", "Voiture", "Revenu"]
-                    else 0,
+                    index=["Autre", "Crédit", "Voiture", "Revenu"].index(t["categorie"]) if t["categorie"] in ["Autre", "Crédit", "Voiture", "Revenu"] else 0,
                     key=f"cat_{t['id']}"
                 )
 
