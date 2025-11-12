@@ -1,5 +1,5 @@
 # ============================================================
-# 💸 CALCULATEUR DE BUDGET SPIRBOOST - VERSION COMPLÈTE
+# 💸 CALCULATEUR DE BUDGET SPIRBOOST - VERSION COMPLÈTE (STABLE)
 # ============================================================
 
 import streamlit as st
@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered",
 )
 
-# 🎨 Style global (Dragon Ball)
+# 🎨 STYLE DRAGON BALL Z
 st.markdown("""
 <style>
 body { background-color:#0b0c10; color:white; }
@@ -56,22 +56,16 @@ button[kind="secondary"]:hover {
 load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
+supabase = create_client(url, key)
 
-from supabase.lib.client_options import ClientOptions
-supabase = create_client(
-    url,
-    key,
-    options=ClientOptions(auto_refresh_token=True, persist_session=True)
-)
-
-# Restauration automatique de session
+# --- Restauration automatique de session (version Python compatible)
 try:
-    session = supabase.auth.get_session()
-    if session and session.user and st.session_state.get("user") is None:
-        st.session_state["user"] = session.user
-        st.success(f"👋 Bienvenue de retour {session.user.email}")
+    if "user" in st.session_state and st.session_state["user"]:
+        current_session = supabase.auth.get_session()
+        if not current_session or not current_session.user:
+            st.session_state["user"] = None
 except Exception:
-    pass
+    st.session_state["user"] = None
 
 # ============================================================
 # 🧠 SESSION STATE
@@ -101,7 +95,11 @@ def signup(email, password):
         st.error(f"Erreur : {e}")
 
 def logout():
-    supabase.auth.sign_out()
+    """Déconnexion complète"""
+    try:
+        supabase.auth.sign_out()
+    except Exception:
+        pass
     st.session_state["user"] = None
     st.session_state["dashboard_loaded"] = False
     st.success("✅ Déconnexion réussie")
