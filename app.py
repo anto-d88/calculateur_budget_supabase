@@ -113,7 +113,7 @@ if not st.session_state["logged_in"]:
         if st.button("Se connecter", type="primary"):
             if login(email, password):
                 st.success("Connexion réussie ✅")
-                st.experimental_rerun()  # recharge proprement la session
+            st.rerun()  # recharge proprement la session
 
     with tab2:
         new_email = st.text_input("Nouvel email", key="signup_email")
