@@ -1,5 +1,5 @@
 # ============================================================
-# 💸 CALCULATEUR DE BUDGET SPIRBOOST - VERSION COMPLÈTE (STABLE)
+# 💸 CALCULATEUR DE BUDGET SPIRBOOST - VERSION STABLE & FONCTIONNELLE
 # ============================================================
 
 import streamlit as st
@@ -10,13 +10,9 @@ import os
 # ============================================================
 # ⚙️ CONFIGURATION DE BASE
 # ============================================================
-st.set_page_config(
-    page_title="💸 SpirBoost Budget",
-    page_icon="💰",
-    layout="centered",
-)
+st.set_page_config(page_title="💸 SpirBoost Budget", page_icon="💰", layout="centered")
 
-# 🎨 STYLE DRAGON BALL Z
+# 🎨 STYLE DRAGON BALL
 st.markdown("""
 <style>
 body { background-color:#0b0c10; color:white; }
@@ -58,22 +54,13 @@ url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# --- Restauration automatique de session (version Python compatible)
-try:
-    if "user" in st.session_state and st.session_state["user"]:
-        current_session = supabase.auth.get_session()
-        if not current_session or not current_session.user:
-            st.session_state["user"] = None
-except Exception:
-    st.session_state["user"] = None
-
 # ============================================================
-# 🧠 SESSION STATE
+# 🧠 SESSION STATE INIT
 # ============================================================
 if "user" not in st.session_state:
     st.session_state["user"] = None
-if "dashboard_loaded" not in st.session_state:
-    st.session_state["dashboard_loaded"] = False
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
 # ============================================================
 # 🔑 FONCTIONS D’AUTHENTIFICATION
@@ -81,10 +68,16 @@ if "dashboard_loaded" not in st.session_state:
 def login(email, password):
     try:
         result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        return result.user
+        if result.user:
+            st.session_state["user"] = result.user
+            st.session_state["logged_in"] = True
+            return True
+        else:
+            st.error("Échec de la connexion : utilisateur non trouvé.")
+            return False
     except Exception as e:
         st.error(f"Erreur de connexion : {e}")
-        return None
+        return False
 
 def signup(email, password):
     try:
@@ -95,38 +88,36 @@ def signup(email, password):
         st.error(f"Erreur : {e}")
 
 def logout():
-    """Déconnexion complète"""
     try:
         supabase.auth.sign_out()
     except Exception:
         pass
     st.session_state["user"] = None
-    st.session_state["dashboard_loaded"] = False
+    st.session_state["logged_in"] = False
     st.success("✅ Déconnexion réussie")
     st.switch_page("app.py")
 
 # ============================================================
 # 🔒 PAGE DE CONNEXION
 # ============================================================
-if not st.session_state["user"]:
+if not st.session_state["logged_in"]:
     st.markdown('<div class="top-banner">⚡ SpirBoost Budget - Connexion ⚡</div>', unsafe_allow_html=True)
     st.title("🔐 Connexion à ton espace SpirBoost")
 
     tab1, tab2 = st.tabs(["Se connecter", "Créer un compte"])
 
     with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Mot de passe", type="password")
-        if st.button("Se connecter"):
-            user = login(email, password)
-            if user:
-                st.session_state["user"] = user
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Mot de passe", type="password", key="login_password")
+
+        if st.button("Se connecter", type="primary"):
+            if login(email, password):
                 st.success("Connexion réussie ✅")
-                st.rerun()
+                st.experimental_rerun()  # recharge proprement la session
 
     with tab2:
-        new_email = st.text_input("Nouvel email")
-        new_password = st.text_input("Nouveau mot de passe", type="password")
+        new_email = st.text_input("Nouvel email", key="signup_email")
+        new_password = st.text_input("Nouveau mot de passe", type="password", key="signup_password")
         if st.button("Créer le compte"):
             if new_email and new_password:
                 signup(new_email, new_password)
@@ -165,11 +156,10 @@ with col4:
     st.page_link("pages/4_Dashboard.py", label="🔥 Tableau de bord", icon="📊")
 
 # ------------------------------------------------------------
-# 🔙 REVENIR À LA CONNEXION (optionnel)
+# 🔙 REVENIR À LA CONNEXION
 # ------------------------------------------------------------
 if st.button("🔐 Revenir à la connexion"):
-    st.session_state["user"] = None
-    st.switch_page("app.py")
+    logout()
 
 # ------------------------------------------------------------
 # 🧠 FOOTER
